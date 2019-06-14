@@ -6,7 +6,7 @@ module Graphics.Vega.VegaLite.Configuration
   (
     -- * Helper Types    
     TimeEncoding(..)
-  , Scaling(..)
+  , AxisBounds(..)
   , ViewConfig(..)
     -- * helpers
   , intYear
@@ -29,7 +29,11 @@ import qualified Data.Time                     as Time
 
 --import           Graphics.Vega.VegaLite         ( TimeUnit(..) )
 
-data Scaling = Default | DataMinMax deriving (Eq)
+data AxisBounds a where
+  Default ::AxisBounds a
+  DataMinMax ::AxisBounds a
+  GivenMinMax ::a -> a -> AxisBounds a deriving (Eq, Show)
+
 
 data ViewConfig = ViewConfig { vcWidth :: Double, vcHeight :: Double, vcPadding :: Double }
 

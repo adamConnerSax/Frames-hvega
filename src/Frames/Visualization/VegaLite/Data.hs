@@ -32,7 +32,7 @@ module Frames.Visualization.VegaLite.Data
 
     -- * utilities
   , minMaxFieldF
-  , fieldScale
+  , axisBounds
 
     -- * records -> hvega data
   , recordToVLDataRow
@@ -53,7 +53,7 @@ module Frames.Visualization.VegaLite.Data
 where
 
 import           Graphics.Vega.VegaLite.Configuration
-                                                ( Scaling(..) )
+                                                ( AxisBounds(..) )
 
 import           Data.Fixed                     ( div'
                                                 , divMod'
@@ -113,21 +113,19 @@ minMaxFieldF =
       joinTuple (ma, mb) = ma >>= (\a -> mb >>= (\b -> return (a, b)))
   in  fmap joinTuple $ (,) <$> minF <*> maxF
 
-fieldScale
+axisBoundsPChannel :: Real a => a -> a -> [GV.PositionChannel]
+axisBoundsPChannel lo hi =
+  [GV.PScale [GV.SDomain $ GV.DNumbers [realToFrac lo, realToFrac hi]]]
+
+axisBounds
   :: forall t rs
    . (DataFieldOf rs t, Real (V.Snd t))
-  => Scaling
+  => AxisBounds (V.Snd t)
   -> FL.Fold (F.Record rs) [GV.PositionChannel]
-fieldScale Default    = pure []
-fieldScale DataMinMax = fmap
-  (maybe
-    []
-    (\(lo, hi) ->
-      [GV.PScale [GV.SDomain $ GV.DNumbers [realToFrac lo, realToFrac hi]]]
-    )
-  )
-  (minMaxFieldF @t)
-
+axisBounds Default = pure []
+axisBounds DataMinMax =
+  fmap (maybe [] (uncurry axisBoundsPChannel)) (minMaxFieldF @t)
+axisBounds (GivenMinMax lo hi) = pure $ axisBoundsPChannel lo hi
 
 recordToVLDataRow'
   :: ( V.RMap rs

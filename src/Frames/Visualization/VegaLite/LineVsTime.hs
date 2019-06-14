@@ -16,7 +16,7 @@ module Frames.Visualization.VegaLite.LineVsTime
 
     -- * Configuration Re-exports
   , ViewConfig(..)
-  , Scaling(..)
+  , AxisBounds(..)
   , TimeEncoding(..)
 
     -- * Re-exports
@@ -31,7 +31,7 @@ import qualified Frames.Visualization.VegaLite.Data
 import           Graphics.Vega.VegaLite.Configuration
                                                 ( ViewConfig(..)
                                                 , viewConfigAsHvega
-                                                , Scaling(..)
+                                                , AxisBounds(..)
                                                 , TimeEncoding(..)
                                                 )
 
@@ -79,16 +79,16 @@ multiLineVsTime
      , Real (V.Snd a)
      )
   => T.Text -- ^ Plot Title
-  -> Scaling
+  -> AxisBounds (V.Snd a)
   -> TimeEncoding
   -> ViewConfig
   -> f (D.Row rs)
   -> GV.VegaLite
-multiLineVsTime title yScaling timeEnc vc rows =
+multiLineVsTime title yBounds timeEnc vc rows =
   let
     groupNames =
       FL.fold FL.list $ FL.fold (FL.premap (F.rgetField @g) FL.set) rows
-    yScale    = FL.fold (D.fieldScale @a yScaling) rows
+    yScale    = FL.fold (D.axisBounds @a yBounds) rows
     parseInfo = D.addParse @t (GV.FoDate $ timeFormat timeEnc) D.defaultParse
     dat       = D.recordsToVLData (F.rcast @'[g, t, a]) parseInfo rows
     yEnc = GV.position GV.Y $ [D.pName @a, GV.PmType GV.Quantitative] ++ yScale

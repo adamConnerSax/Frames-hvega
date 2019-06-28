@@ -34,7 +34,6 @@ data AxisBounds a where
   DataMinMax ::AxisBounds a
   GivenMinMax ::a -> a -> AxisBounds a deriving (Eq, Show)
 
-
 data ViewConfig = ViewConfig { vcWidth :: Double, vcHeight :: Double, vcPadding :: Double }
 
 viewConfigAsHvega :: ViewConfig -> GV.BuildLabelledSpecs

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d6e0a101381d47ec2b45767e723465f65c1dc7a6937a10dcac211018ae408b30
+-- hash: 5de1c120cf8b84db991d6826aca1b3649097f71f7bd52b13b803dcab04d559fc
 
 name:           Frames-hvega
 version:        0.1.0.0
@@ -37,6 +37,7 @@ library
       Frames.Visualization.VegaLite.Data
       Frames.Visualization.VegaLite.Histogram
       Frames.Visualization.VegaLite.LineVsTime
+      Frames.Visualization.VegaLite.ParameterPlots
       Frames.Visualization.VegaLite.StackedArea
       Graphics.Vega.VegaLite.Configuration
   other-modules:
@@ -45,16 +46,18 @@ library
       src
   ghc-options: -O -Wall
   build-depends:
-      Frames >=0.5.0 && <=0.7.0
-    , array >=0.4.0.1 && <=0.6.0.0
+      Frames >=0.5.0 && <=0.7
+    , Frames-utils >=0.2.0.1 && <0.4
+    , array >=0.4.0.1 && <=0.6
     , base >=4.7 && <5
-    , containers >=0.5.0.0 && <=0.7.0.0
-    , foldl >=1.4.0 && <=1.5.0.0
-    , histogram-fill >=0.8.0.0 && <0.10.0.0
-    , hvega >=0.2.0.0 && <0.3.0.0
-    , text >=1.1.0.1 && <1.3.0.0
-    , time >=1.8 && <=1.10.0
-    , vector >=0.11.0.0 && <0.13.0.0
+    , containers >=0.5.0.0 && <=0.7
+    , foldl >=1.4.0 && <=1.5
+    , histogram-fill >=0.8.0.0 && <0.10
+    , hvega >=0.2.0.0 && <0.5
+    , statistics >=0.15.0 && <0.16
+    , text >=1.1.0.1 && <1.3
+    , time >=1.8 && <=1.10
+    , vector >=0.11.0.0 && <0.13
     , vinyl >=0.10.0 && <0.12
   if flag(dump-core)
     ghc-options: -fplugin=DumpCore -fplugin-opt DumpCore:core-html

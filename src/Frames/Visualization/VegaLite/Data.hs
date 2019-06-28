@@ -97,7 +97,7 @@ vinylRows dataLoaders dat =
 
 addRowBuilder
   :: forall t ts a
-   . DataField t
+   .  V.KnownField t --DataField t 
   => (a -> V.Snd t)
   -> RowBuilderF a ts
   -> RowBuilderF a (t ': ts)

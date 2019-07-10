@@ -12,10 +12,11 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
-module Frames.Visualization.VegaLite.Histogram
-  ( singleHistogram
-  , multiHistogram
-  , MultiHistogramStyle(..)
+module Frames.Visualization.VegaLite.Correlation
+  (
+    correlationCircles
+  , correlationCirclesFromFrame
+  , toCorrelationRows
   )
 where
 
@@ -25,26 +26,125 @@ import qualified Frames.Visualization.VegaLite.Data
 import           Graphics.Vega.VegaLite.Configuration
                                                 ( ViewConfig(..)
                                                 , configuredVegaLite
-                                                , AxisBounds(..)
                                                 )
 
 import qualified Control.Foldl                 as FL
-import qualified Data.List                     as List
-import qualified Data.Map                      as M
-import           Data.Maybe                     ( fromMaybe )
+import           Control.Monad                  ( when )
+import qualified Data.Set                      as S
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as T
-import qualified Data.Vector                   as VB
-import qualified Data.Vector.Unboxed           as VU
 import qualified Data.Vinyl                    as V
 import qualified Data.Vinyl.TypeLevel          as V
 import qualified Frames                        as F
---import qualified Frames.Melt                   as F
 import qualified Graphics.Vega.VegaLite        as GV
 
-import qualified Data.Histogram                as H
-import qualified Data.Histogram.Fill           as H
 
+
+-- | Correlation charts
+toCorrelationRows
+  :: (b -> T.Text)
+  -> S.Set b
+  -> (b -> b -> a)
+  -> [F.Record ['("L1", T.Text), '("L2", T.Text), '("C", a)]]
+toCorrelationRows toText parameters getCorr =
+  let allPairs = [ (x, y) | x <- S.toList parameters, y <- S.toList parameters ]
+      addCorr (x, y) = (x, y, getCorr x y)
+      makeRec (x, y, c) = toText x F.&: toText y F.&: c F.&: V.RNil
+  in  fmap (makeRec . addCorr) allPairs
+
+correlationCircles
+  :: forall a b 
+  . (D.ToVLDataValue (F.ElField '("C", a))
+    , RealFrac a
+    , Show a
+    , Ord a
+    )
+  => (b -> T.Text)
+  -> S.Set b
+  -> (b -> b -> a)
+  -> Bool
+  -> T.Text
+  -> ViewConfig
+  -> Either T.Text GV.VegaLite
+correlationCircles toText parameters corr removeDiag title vc =
+  let rows = toCorrelationRows toText parameters corr
+  in correlationCirclesFromFrame @'("L1",T.Text) @'("L2",T.Text) @'("C", a) removeDiag title vc rows
+
+correlationCirclesFromFrame
+  :: forall p q c rs f
+   . ( D.DataFieldOf rs p
+     , D.DataFieldOf rs q
+     , D.DataFieldOf rs c
+     , RealFrac (V.Snd c)
+     , Show (V.Snd c)
+     , Ord (V.Snd c)
+     , V.Snd p ~ T.Text
+     , V.Snd q ~ T.Text
+     , Foldable f
+     )
+  => Bool
+  -> Text
+  -> ViewConfig
+  -> f (D.Row rs)
+  -> Either T.Text GV.VegaLite
+correlationCirclesFromFrame removeDiag title vc rows = do
+  let (pValues, qValues, cValues, cMin, cMax) = FL.fold
+        (   (,,,,)
+        <$> FL.premap (F.rgetField @p) FL.set
+        <*> FL.premap (F.rgetField @q) FL.set
+        <*> FL.premap (F.rgetField @c) FL.set
+        <*> FL.premap (F.rgetField @c) FL.minimum
+        <*> FL.premap (F.rgetField @c) FL.maximum
+        )
+        rows
+  when (pValues /= qValues)
+    $  Left
+    $  "mismatched labels in rows given to correlationBoxes. {p}="
+    <> (T.pack $ show pValues)
+    <> " and {p}="
+    <> (T.pack $ show qValues)
+  case cMin of
+    Nothing -> Left "No data!"
+    Just x  -> when (x < -1.01) $ Left $ "correlation value < -1 in data ({c}=" <> T.pack (show cValues) <> ")!"
+  case cMax of
+    Nothing -> Left "No data!"
+    Just x  -> when (x > 1.01) $ Left $ "correlation value > 1 in data ({c}=" <> T.pack (show cValues) <> ")!"
+
+  let dat      = D.recordsToVLData (F.rcast @'[p, q, c]) D.defaultParse rows
+      trans    = GV.transform
+                 . GV.calculateAs ("abs(datum." <> D.colName @c <> ")") "absCorr"
+                 . if removeDiag
+                   then
+                     GV.filter (GV.FCompose $ GV.Not (GV.Expr $ "datum." <> D.colName @p <> " == datum." <> D.colName @q))
+                   else
+                     id
+      cEnc     = GV.color [D.mName @c
+                          , GV.MmType GV.Quantitative
+                          , GV.MLegend []
+                          , GV.MScale [GV.SScheme "redyellowgreen" []
+                                      ]
+                          ]
+                 . GV.size [GV.MName "absCorr", GV.MmType GV.Quantitative, GV.MLegend []]
+      posEnc     = GV.position GV.X [D.pName @p, GV.PmType GV.Nominal, GV.PAxis [GV.AxTitle ""]]
+                   . GV.position GV.Y [D.pName @q, GV.PmType GV.Nominal, GV.PAxis [GV.AxTitle ""]]
+--                   . GV.tooltip [D.tName @p, GV.TmType GV.Nominal]
+--                   . GV.tooltip [D.tName @q, GV.TmType GV.Nominal]
+--                   . GV.tooltip [D.tName @c, GV.TmType GV.Quantitative]
+
+      mark          = GV.mark GV.Circle []
+--      configuration = GV.configure . viewConfigAsHvega vc
+      vl            = configuredVegaLite vc $
+        [ GV.title title
+        , dat
+        , trans []
+        , (GV.encoding . cEnc . posEnc) []
+        , mark       
+        ]
+  return vl
+
+
+
+{-
 -- | Histograms
 -- | Single, stacked, side-by-side, and faceted
 
@@ -81,13 +181,13 @@ singleHistogram title yLabelM nBins xBounds addOutOfRange vc@(ViewConfig width _
       dat =
         GV.dataFromRows [] $ List.concat $ VB.toList $ fmap toVLRow $ VB.convert
           hVec
-      encX = GV.position GV.X [D.pName @x, GV.PmType GV.Quantitative]
+      encX          = GV.position GV.X [D.pName @x, GV.PmType GV.Quantitative]
       encY = GV.position GV.Y [GV.PName yLabel, GV.PmType GV.Quantitative]
-      hBar = GV.mark GV.Bar [GV.MBinSpacing 1, GV.MSize bandSize]
-      hEnc = encX . encY
-      vl =
-        configuredVegaLite vc
-          $ [GV.title title, dat, (GV.encoding . hEnc) [], hBar]
+      hBar          = GV.mark GV.Bar [GV.MBinSpacing 1, GV.MSize bandSize]
+      hEnc          = encX . encY
+      configuration = GV.configure . viewConfigAsHvega vc
+      vl            = GV.toVegaLite
+        [GV.title title, dat, (GV.encoding . hEnc) [], hBar, configuration []]
     in
       vl
 
@@ -162,10 +262,9 @@ multiHistogram title yLabelM nBins xBounds addOutOfRange mhStyle vc@(ViewConfig 
               encF  = GV.column [D.fName @x, GV.FmType GV.Quantitative]
               hBar' = GV.mark GV.Bar [GV.MBinSpacing 1]
           in  (encX . encY . encC . encF, hBar')
---      configuration = GV.configure . viewConfigAsHvega vc
-      vl = configuredVegaLite
-        vc
-        [GV.title title, dat, (GV.encoding . hEnc) [], hBar]
+      configuration = GV.configure . viewConfigAsHvega vc
+      vl            = GV.toVegaLite
+        [GV.title title, dat, (GV.encoding . hEnc) [], hBar, configuration []]
     in
       vl
 
@@ -174,8 +273,8 @@ makeHistogram
   :: Bool -> H.BinD -> VU.Vector Double -> VU.Vector (H.BinValue H.BinD, Double)
 makeHistogram addOutOfRange bins vecX =
   let histo =
-        H.fillBuilder (H.mkSimple bins)
-          $ ((VB.convert vecX) :: VB.Vector Double)
+          H.fillBuilder (H.mkSimple bins)
+            $ ((VB.convert vecX) :: VB.Vector Double)
       hVec              = H.asVector histo
       minIndex          = 0
       maxIndex          = VU.length hVec - 1
@@ -189,3 +288,4 @@ makeHistogram addOutOfRange bins vecX =
 
 
 
+-}

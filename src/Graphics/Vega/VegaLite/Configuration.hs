@@ -11,23 +11,16 @@ module Graphics.Vega.VegaLite.Configuration
     -- * helpers
   , intYear
 --  , timeField
+  , configuredVegaLite
   , viewConfigAsHvega
+  , viewConfigAsTopLevel
     -- * Re-export
   )
 where
 
 import qualified Graphics.Vega.VegaLite        as GV
 
-import           Control.Arrow                  ( second )
-import qualified Control.Foldl                 as FL
-import qualified Data.Array                    as A
-import qualified Data.Map                      as M
-import           Data.Maybe                     ( catMaybes )
 import           Data.Text                      ( Text )
-import qualified Data.Text                     as T
-import qualified Data.Time                     as Time
-
---import           Graphics.Vega.VegaLite         ( TimeUnit(..) )
 
 data AxisBounds a where
   Default ::AxisBounds a
@@ -40,6 +33,17 @@ viewConfigAsHvega :: ViewConfig -> GV.BuildLabelledSpecs
 viewConfigAsHvega (ViewConfig w h p) =
   GV.configuration (GV.View [GV.ViewWidth w, GV.ViewHeight h])
     . GV.configuration (GV.Padding $ GV.PSize p)
+
+viewConfigAsTopLevel :: ViewConfig -> [(GV.VLProperty, GV.VLSpec)]
+viewConfigAsTopLevel (ViewConfig w h p) =
+  [ GV.width w
+  , GV.height h
+  , GV.padding (GV.PSize p)
+  , GV.autosize [GV.AFit, GV.APadding, GV.AResize]
+  ]
+
+configuredVegaLite :: ViewConfig -> [(GV.VLProperty, GV.VLSpec)] -> GV.VegaLite
+configuredVegaLite vc xs = GV.toVegaLite $ viewConfigAsTopLevel vc <> xs
 
 data TimeEncoding = TimeEncoding { timeFormat :: Text, timeUnit :: GV.TimeUnit }
 

@@ -21,7 +21,7 @@ import qualified Frames.Visualization.VegaLite.Data
 
 import           Graphics.Vega.VegaLite.Configuration
                                                 ( ViewConfig(..)
-                                                , viewConfigAsHvega
+                                                , configuredVegaLite
                                                 , TimeEncoding(..)
                                                 )
 
@@ -30,7 +30,6 @@ import qualified Graphics.Vega.VegaLite        as GV
 import           Graphics.Vega.VegaLite         ( TimeUnit(..) )
 import qualified Frames                        as F
 import qualified Frames.Melt                   as F
-import qualified Data.Vinyl                    as V
 
 stackedAreaVsTime
   :: forall g t a rs f
@@ -60,6 +59,4 @@ stackedAreaVsTime title timeEnc vc vRows =
           , GV.mark GV.Area [GV.MInterpolate GV.Monotone]
           ]
       ]
-    configuration = GV.configure . viewConfigAsHvega vc
-  in
-    GV.toVegaLite [GV.title title, GV.layer specs, dat, configuration []]
+  in configuredVegaLite vc [GV.title title, GV.layer specs, dat]

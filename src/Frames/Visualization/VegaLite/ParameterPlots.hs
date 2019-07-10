@@ -32,22 +32,17 @@ import qualified Frames.Visualization.VegaLite.Data
 
 import           Graphics.Vega.VegaLite.Configuration
                                                 ( ViewConfig(..)
-                                                , viewConfigAsHvega
+                                                , configuredVegaLite
                                                 , AxisBounds(..)
                                                 , TimeEncoding(..)
                                                 )
 
 
-import qualified Control.Foldl                 as FL
-import           Control.Monad                  ( join )
-import qualified Data.Array                    as A
-import           Data.Functor.Identity          ( Identity(Identity) )
-import           Data.Maybe                     ( fromMaybe )
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as T
 import qualified Graphics.Vega.VegaLite        as GV
 import           Graphics.Vega.VegaLite         ( DateTime(..) )
-import qualified Data.List                     as List
+
 import           Text.Printf                    ( printf )
 
 import qualified Frames                        as F
@@ -60,8 +55,8 @@ import qualified Frames.Transform              as FT
 import qualified Statistics.Types              as S
 
 -- | A type to represent the details of a parameter estimate
-data ParameterEstimate = ParameterEstimate  { value :: Double, confidence :: (Double, Double) }
-data NamedParameterEstimate = NamedParameterEstimate { name :: Text, pEstimate :: ParameterEstimate }
+data ParameterEstimate = ParameterEstimate  { value :: Double, confidence :: (Double, Double) } deriving (Show)
+data NamedParameterEstimate = NamedParameterEstimate { name :: Text, pEstimate :: ParameterEstimate } deriving (Show)
 
 type Name = "Name" F.:-> T.Text
 type Estimate = "Estimate" F.:-> Double
@@ -168,7 +163,7 @@ parameterPlotFlex
 parameterPlotFlex haveLegend title cl vc rows
   = let
       unpackedRows = fmap (unpackParameterEstimate @pe @rs) rows
-      dat          = D.recordsToVLData (F.rcast @'[Name, l, Estimate])
+      dat          = D.recordsToVLData (F.rcast @'[Name, l, Lo, Hi, Estimate])
                                        D.defaultParse
                                        unpackedRows
       xLabel =
@@ -194,12 +189,9 @@ parameterPlotFlex haveLegend title cl vc rows
         [D.pName @Hi, GV.PmType GV.Quantitative, GV.PAxis [GV.AxTitle ""]]
       estConfEnc =
         estConfLoEnc . estConfHiEnc . estimateYEnc . estimateColorEnc
-      estSpec = GV.asSpec [(GV.encoding . estimateEnc) [], GV.mark GV.Point []]
+      estSpec  = GV.asSpec [(GV.encoding . estimateEnc) [], GV.mark GV.Point []]
       confSpec = GV.asSpec [(GV.encoding . estConfEnc) [], GV.mark GV.Rule []]
-      configuration = GV.configure . viewConfigAsHvega vc
-      vl = GV.toVegaLite
-        [GV.title title, GV.layer [estSpec, confSpec], dat, configuration []]
     in
-      vl
+      configuredVegaLite vc [GV.title title, GV.layer [estSpec, confSpec], dat]
 
 

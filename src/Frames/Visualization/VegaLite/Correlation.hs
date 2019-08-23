@@ -27,6 +27,7 @@ import           Graphics.Vega.VegaLite.Configuration
                                                 ( ViewConfig(..)
                                                 , configuredVegaLite
                                                 )
+import qualified Graphics.Vega.VegaLite.Compat as VegaCompat                                                
 
 import qualified Control.Foldl                 as FL
 import           Control.Monad                  ( when )
@@ -134,7 +135,7 @@ correlationCirclesFromFrame removeDiag title vc rows = do
       mark          = GV.mark GV.Circle []
 --      configuration = GV.configure . viewConfigAsHvega vc
       vl            = configuredVegaLite vc $
-        [ GV.title title
+        [ VegaCompat.title title
         , dat
         , trans []
         , (GV.encoding . cEnc . posEnc) []
@@ -187,7 +188,7 @@ singleHistogram title yLabelM nBins xBounds addOutOfRange vc@(ViewConfig width _
       hEnc          = encX . encY
       configuration = GV.configure . viewConfigAsHvega vc
       vl            = GV.toVegaLite
-        [GV.title title, dat, (GV.encoding . hEnc) [], hBar, configuration []]
+        [VegaCompat.title title, dat, (GV.encoding . hEnc) [], hBar, configuration []]
     in
       vl
 
@@ -264,7 +265,7 @@ multiHistogram title yLabelM nBins xBounds addOutOfRange mhStyle vc@(ViewConfig 
           in  (encX . encY . encC . encF, hBar')
       configuration = GV.configure . viewConfigAsHvega vc
       vl            = GV.toVegaLite
-        [GV.title title, dat, (GV.encoding . hEnc) [], hBar, configuration []]
+        [VegaCompat.title title, dat, (GV.encoding . hEnc) [], hBar, configuration []]
     in
       vl
 

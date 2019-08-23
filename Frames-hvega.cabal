@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f499b7769f4dba40d2c091a67138af47240bce6653d93c8c837b4e82975e50c2
+-- hash: 1c6534b064c8c39d3b63e607eb06f994f96db35c986854b86d1c82ab5294b1b8
 
 name:           Frames-hvega
 version:        0.1.0.0
@@ -40,6 +40,7 @@ library
       Frames.Visualization.VegaLite.LineVsTime
       Frames.Visualization.VegaLite.ParameterPlots
       Frames.Visualization.VegaLite.StackedArea
+      Graphics.Vega.VegaLite.Compat
       Graphics.Vega.VegaLite.Configuration
   other-modules:
       Paths_Frames_hvega

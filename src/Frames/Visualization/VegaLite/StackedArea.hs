@@ -24,6 +24,7 @@ import           Graphics.Vega.VegaLite.Configuration
                                                 , configuredVegaLite
                                                 , TimeEncoding(..)
                                                 )
+import qualified Graphics.Vega.VegaLite.Compat as VegaCompat
 
 import qualified Data.Text                     as T
 import qualified Graphics.Vega.VegaLite        as GV
@@ -59,4 +60,4 @@ stackedAreaVsTime title timeEnc vc vRows =
           , GV.mark GV.Area [GV.MInterpolate GV.Monotone]
           ]
       ]
-  in configuredVegaLite vc [GV.title title, GV.layer specs, dat]
+  in configuredVegaLite vc [VegaCompat.title title, GV.layer specs, dat]

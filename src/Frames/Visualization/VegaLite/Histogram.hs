@@ -27,6 +27,7 @@ import           Graphics.Vega.VegaLite.Configuration
                                                 , configuredVegaLite
                                                 , AxisBounds(..)
                                                 )
+import qualified Graphics.Vega.VegaLite.Compat as VegaCompat
 
 import qualified Control.Foldl                 as FL
 import qualified Data.List                     as List
@@ -87,7 +88,7 @@ singleHistogram title yLabelM nBins xBounds addOutOfRange vc@(ViewConfig width _
       hEnc = encX . encY
       vl =
         configuredVegaLite vc
-          $ [GV.title title, dat, (GV.encoding . hEnc) [], hBar]
+          $ [VegaCompat.title title, dat, (GV.encoding . hEnc) [], hBar]
     in
       vl
 
@@ -165,7 +166,7 @@ multiHistogram title yLabelM nBins xBounds addOutOfRange mhStyle vc@(ViewConfig 
 --      configuration = GV.configure . viewConfigAsHvega vc
       vl = configuredVegaLite
         vc
-        [GV.title title, dat, (GV.encoding . hEnc) [], hBar]
+        [VegaCompat.title title, dat, (GV.encoding . hEnc) [], hBar]
     in
       vl
 

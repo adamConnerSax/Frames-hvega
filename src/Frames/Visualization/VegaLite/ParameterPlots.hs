@@ -36,7 +36,7 @@ import           Graphics.Vega.VegaLite.Configuration
                                                 , AxisBounds(..)
                                                 , TimeEncoding(..)
                                                 )
-
+import qualified Graphics.Vega.VegaLite.Compat as VegaCompat
 
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as T
@@ -192,6 +192,8 @@ parameterPlotFlex haveLegend title cl vc rows
       estSpec  = GV.asSpec [(GV.encoding . estimateEnc) [], GV.mark GV.Point []]
       confSpec = GV.asSpec [(GV.encoding . estConfEnc) [], GV.mark GV.Rule []]
     in
-      configuredVegaLite vc [GV.title title, GV.layer [estSpec, confSpec], dat]
+      configuredVegaLite
+        vc
+        [VegaCompat.title title, GV.layer [estSpec, confSpec], dat]
 
 

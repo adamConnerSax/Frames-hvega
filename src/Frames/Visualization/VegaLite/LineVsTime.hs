@@ -34,6 +34,7 @@ import           Graphics.Vega.VegaLite.Configuration
                                                 , AxisBounds(..)
                                                 , TimeEncoding(..)
                                                 )
+import qualified Graphics.Vega.VegaLite.Compat as VegaCompat
 
 import qualified Control.Foldl                 as FL
 import qualified Data.Text                     as T
@@ -93,5 +94,5 @@ multiLineVsTime title yBounds timeEnc vc rows
         GV.asSpec [(GV.encoding . enc) [], GV.mark GV.Point [], filter gName []]
       specs = concat $ fmap (\x -> [lSpec x, mSpec x]) groupNames
     in
-      configuredVegaLite vc [GV.title title, GV.layer specs, dat]
+      configuredVegaLite vc [VegaCompat.title title, GV.layer specs, dat]
 

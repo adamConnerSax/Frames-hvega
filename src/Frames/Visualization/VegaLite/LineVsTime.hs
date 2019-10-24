@@ -90,8 +90,11 @@ multiLineVsTime title yBounds timeEnc vc rows
         , GV.mark GV.Line [GV.MInterpolate GV.Monotone]
         , filter name []
         ]
-      mSpec gName =
-        GV.asSpec [(GV.encoding . enc) [], GV.mark GV.Point [], filter gName []]
+      mSpec gName = GV.asSpec
+        [ (GV.encoding . enc) []
+        , GV.mark GV.Point [GV.MFilled True]
+        , filter gName []
+        ]
       specs = concat $ fmap (\x -> [lSpec x, mSpec x]) groupNames
     in
       configuredVegaLite vc [VegaCompat.title title, GV.layer specs, dat]

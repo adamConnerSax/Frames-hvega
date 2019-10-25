@@ -23,7 +23,7 @@ import           Graphics.Vega.VegaLite.Configuration
                                                 ( ViewConfig(..)
                                                 , configuredVegaLite
                                                 , TimeEncoding(..)
-                                                , AxisBounds
+                                                , AxisBounds(..)
                                                 )
 import qualified Graphics.Vega.VegaLite.Compat as VegaCompat
 
@@ -46,7 +46,7 @@ stackedAreaVsTime
      )
   => T.Text -- ^ Title
   -> AxisBounds (V.Snd a)
-  -> TimeEncoding
+  -> TimeEncoding (V.Snd t)
   -> ViewConfig -- sizing information
   -> f (D.Row rs)
   -> GV.VegaLite
@@ -54,10 +54,19 @@ stackedAreaVsTime title yBounds timeEnc vc vRows
   = let
       parseInfo = D.addParse @t (GV.FoDate $ timeFormat timeEnc) D.defaultParse
       yScale    = FL.fold (D.axisBounds @a yBounds) vRows
+--      xScale    = FL.fold (D.axisBounds @t DataMinMax) vRows
       dat       = D.recordsToVLData (F.rcast @'[g, t, a]) parseInfo vRows
-      xEnc      = GV.position
-        GV.X
-        [D.pName @t, GV.PmType GV.Temporal, GV.PTimeUnit $ timeUnit timeEnc]
+      xAxValues =
+        GV.DateTimes $ fmap (toDateTime timeEnc . F.rgetField @t) $ FL.fold
+          FL.list
+          vRows
+      xEnc =
+        GV.position GV.X
+          $ [ D.pName @t
+            , GV.PmType GV.Temporal
+            , GV.PTimeUnit $ timeUnit timeEnc
+            , GV.PAxis [GV.AxValues xAxValues]
+            ]
       yEnc =
         GV.position GV.Y $ [D.pName @a, GV.PmType GV.Quantitative] ++ yScale
       colorEnc = GV.color [D.mName @g, GV.MmType GV.Nominal]

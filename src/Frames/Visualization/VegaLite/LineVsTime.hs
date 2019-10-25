@@ -64,7 +64,7 @@ multiLineVsTime
      )
   => T.Text -- ^ Plot Title
   -> AxisBounds (V.Snd a)
-  -> TimeEncoding
+  -> TimeEncoding (V.Snd t)
   -> ViewConfig
   -> f (D.Row rs)
   -> GV.VegaLite
@@ -75,11 +75,19 @@ multiLineVsTime title yBounds timeEnc vc rows
       yScale    = FL.fold (D.axisBounds @a yBounds) rows
       parseInfo = D.addParse @t (GV.FoDate $ timeFormat timeEnc) D.defaultParse
       dat       = D.recordsToVLData (F.rcast @'[g, t, a]) parseInfo rows
+      xAxValues =
+        GV.DateTimes $ fmap (toDateTime timeEnc . F.rgetField @t) $ FL.fold
+          FL.list
+          rows
       yEnc =
         GV.position GV.Y $ [D.pName @a, GV.PmType GV.Quantitative] ++ yScale
       xEnc = GV.position
         GV.X
-        [D.pName @t, GV.PmType GV.Temporal, GV.PTimeUnit (timeUnit timeEnc)]
+        [ D.pName @t
+        , GV.PmType GV.Temporal
+        , GV.PTimeUnit (timeUnit timeEnc)
+        , GV.PAxis [GV.AxValues xAxValues]
+        ]
       orderEnc = GV.order [D.oName @t, GV.OmType GV.Temporal]
       colorEnc = GV.color [D.mName @g, GV.MmType GV.Nominal]
       enc      = xEnc . yEnc . colorEnc -- . orderEnc

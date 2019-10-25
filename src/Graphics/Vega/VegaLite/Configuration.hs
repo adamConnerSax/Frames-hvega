@@ -45,11 +45,11 @@ viewConfigAsTopLevel (ViewConfig w h p) =
 configuredVegaLite :: ViewConfig -> [(GV.VLProperty, GV.VLSpec)] -> GV.VegaLite
 configuredVegaLite vc xs = GV.toVegaLite $ viewConfigAsTopLevel vc <> xs
 
-data TimeEncoding = TimeEncoding { timeFormat :: Text, timeUnit :: GV.TimeUnit }
+data TimeEncoding a = TimeEncoding { timeFormat :: Text, timeUnit :: GV.TimeUnit, toDateTime:: a -> [GV.DateTime] }
 
 -- helpers for time encoding
-intYear :: TimeEncoding
-intYear = TimeEncoding "%Y" GV.Year
+intYear :: TimeEncoding Int
+intYear = TimeEncoding "%Y" GV.Year (\n -> [GV.DTYear n])
 
 {-
 timeField :: TimeEncoding a -> a -> GV.DataValue

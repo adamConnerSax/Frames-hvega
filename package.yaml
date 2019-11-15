@@ -28,7 +28,8 @@ dependencies:
 - text >= 1.1.0.1 && < 1.3
 - time >= 1.8 && <= 1.10
 - vector >= 0.11.0.0 && < 0.13
-- vinyl >= 0.10.0 && < 0.12
+- vinyl >= 0.10.0 && < 0.13
+- primitive >= 0.7.0.0 && < 0.8
 
 flags:
   dump-core:

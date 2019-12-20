@@ -27,7 +27,7 @@ loganPowellUrl =
 
 usCongressionalDistricts :: VegaGeoSource
 usCongressionalDistricts =
-  GeJSON $ loganPowellUrl <> "500k/2018/congressional-district.json"
+  GeoJSON $ loganPowellUrl <> "500k/2018/congressional-district.json"
 
 
 

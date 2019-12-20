@@ -72,6 +72,8 @@ import qualified Data.Vinyl.Functor            as V
 import qualified Data.Vinyl.TypeLevel          as V
 import qualified Frames                        as F
 import qualified Frames.Melt                   as F
+import qualified Frames.MapReduce              as FMR
+import qualified Control.MapReduce             as MR
 
 import           GHC.TypeLits                   ( Symbol )
 import           Data.Kind                      ( Type )
@@ -147,6 +149,44 @@ recordToVLDataRow
   => Row rs
   -> [GV.DataRow]
 recordToVLDataRow r = GV.dataRow (recordToVLDataRow' r) []
+
+-- combine multi-row data
+pivotedRecordsToVLDataRows ::
+  forall ps ds ks rs f. ( Ord (Row ks)
+                        , V.RMap ks
+                        , V.ReifyConstraint ToVLDataValue F.ElField ks
+                        , V.RecordToList ks
+                        , ps F.⊆ rs -- ^ pivot columns
+                        , ds F.⊆ rs -- ^ data columns
+                        , ks F.⊆ rs -- ^ key columns
+                        , (ps V.++ ds) F.⊆ rs 
+                        , Foldable f                 
+                    )
+  =>  FL.Fold (Row (ps V.++ ds)) [(T.Text, GV.DataValue)]
+  -> f (Row rs)
+  -> [GV.DataRow]
+pivotedRecordsToVLDataRows pivotFold rows =
+  let rowsFold = FMR.mapReduceFold
+        MR.noUnpack
+        (FMR.assignKeysAndData @ks @(ps V.++ ds))
+        (MR.ReduceFold $ (\k -> fmap (\pVLDat -> recordToVLDataRow' k ++ pVLDat) pivotFold))
+  in concat $ fmap (\x -> GV.dataRow x []) (FL.fold rowsFold rows)
+  
+-- pivot key becomes text, data cols become labeled values, each merged with key per given function
+simplePivotFold ::
+  forall ps ds. (ps F.⊆ (ps V.++ ds)
+                ,ds F.⊆ (ps V.++ ds)
+                )
+  => (T.Text -> T.Text -> Text)
+  -> (Row ps -> T.Text)
+  -> (Row ds -> [(T.Text, GV.Data)])
+  -> FL.Fold (Row (ps V.++ ds)) [(T.Text, GV.Data)]
+simplePivotFold labelDataWithKey keyToText datToVals =
+  let label r = keyToText $ F.rcast r
+      datVals r = datToVals $ F.rcast r
+      doOne r = fmap ((\(l,d) -> (labelDataWithKey (label r) l ,d))) $ datVals r
+  in fmap (concat . fmap doOne) $ FL.list
+
 
 type RowParseRec rs = F.Rec (V.Const GV.DataType) rs
 

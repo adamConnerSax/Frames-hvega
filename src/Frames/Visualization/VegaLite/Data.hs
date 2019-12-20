@@ -37,6 +37,8 @@ module Frames.Visualization.VegaLite.Data
     -- * records -> hvega data
   , recordToVLDataRow
   , recordsToVLData
+  , pivotedRecordsToVLDataRows
+  , simplePivotFold
 
     -- * helpers 
   , colName
@@ -152,23 +154,22 @@ recordToVLDataRow r = GV.dataRow (recordToVLDataRow' r) []
 
 -- combine multi-row data
 pivotedRecordsToVLDataRows ::
-  forall ps ds ks rs f. ( Ord (Row ks)
-                        , V.RMap ks
-                        , V.ReifyConstraint ToVLDataValue F.ElField ks
-                        , V.RecordToList ks
-                        , ps F.⊆ rs -- ^ pivot columns
-                        , ds F.⊆ rs -- ^ data columns
-                        , ks F.⊆ rs -- ^ key columns
-                        , (ps V.++ ds) F.⊆ rs 
-                        , Foldable f                 
+  forall ks ps rs f. ( Ord (Row ks)
+                     , V.RMap ks
+                     , V.ReifyConstraint ToVLDataValue F.ElField ks
+                     , V.RecordToList ks
+                     , ps F.⊆ rs -- ^ pivot/data columns
+                     , ks F.⊆ rs -- ^ key columns
+                     , ps F.⊆ rs 
+                     , Foldable f                 
                     )
-  =>  FL.Fold (Row (ps V.++ ds)) [(T.Text, GV.DataValue)]
+  =>  FL.Fold (Row ps) [(T.Text, GV.DataValue)]
   -> f (Row rs)
   -> [GV.DataRow]
 pivotedRecordsToVLDataRows pivotFold rows =
   let rowsFold = FMR.mapReduceFold
         MR.noUnpack
-        (FMR.assignKeysAndData @ks @(ps V.++ ds))
+        (FMR.assignKeysAndData @ks @ps)
         (MR.ReduceFold $ (\k -> fmap (\pVLDat -> recordToVLDataRow' k ++ pVLDat) pivotFold))
   in concat $ fmap (\x -> GV.dataRow x []) (FL.fold rowsFold rows)
   
@@ -179,8 +180,8 @@ simplePivotFold ::
                 )
   => (T.Text -> T.Text -> Text)
   -> (Row ps -> T.Text)
-  -> (Row ds -> [(T.Text, GV.Data)])
-  -> FL.Fold (Row (ps V.++ ds)) [(T.Text, GV.Data)]
+  -> (Row ds -> [(T.Text, GV.DataValue)])
+  -> FL.Fold (Row (ps V.++ ds)) [(T.Text, GV.DataValue)]
 simplePivotFold labelDataWithKey keyToText datToVals =
   let label r = keyToText $ F.rcast r
       datVals r = datToVals $ F.rcast r

@@ -287,6 +287,7 @@ instance ToVLDataValue (F.ElField '(s, Text)) where
 instance ToVLDataValue (F.ElField '(s, Bool)) where
   toVLDataValue x = (T.pack $ V.getLabel x, GV.Boolean $ V.getField x)
 
+
 {-
 instance ToVLDataValue (F.ElField '(s, Int32)) where
   toVLDataValue x = (T.pack $ V.getLabel x, GV.Number $ realToFrac $ V.getField x)

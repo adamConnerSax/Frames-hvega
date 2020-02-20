@@ -29,10 +29,15 @@ data AxisBounds a where
 
 data ViewConfig = ViewConfig { vcWidth :: Double, vcHeight :: Double, vcPadding :: Double }
 
-viewConfigAsHvega :: ViewConfig -> GV.BuildLabelledSpecs
-viewConfigAsHvega (ViewConfig w h p) =
-  GV.configuration (GV.View [GV.ViewWidth w, GV.ViewHeight h])
-    . GV.configuration (GV.Padding $ GV.PSize p)
+viewConfigAsHvega :: ViewConfig -> GV.BuildConfigureSpecs
+viewConfigAsHvega (ViewConfig w h p) = GV.configuration
+  (GV.View
+    [ GV.ViewContinuousWidth w
+    , GV.ViewContinuousHeight h
+    , GV.ViewDiscreteWidth w
+    , GV.ViewDiscreteHeight h
+    ]
+  )
 
 viewConfigAsTopLevel :: ViewConfig -> [(GV.VLProperty, GV.VLSpec)]
 viewConfigAsTopLevel (ViewConfig w h p) =
@@ -43,7 +48,13 @@ viewConfigAsTopLevel (ViewConfig w h p) =
   ]
 
 configuredVegaLite :: ViewConfig -> [(GV.VLProperty, GV.VLSpec)] -> GV.VegaLite
-configuredVegaLite vc xs = GV.toVegaLite $ viewConfigAsTopLevel vc <> xs
+--configuredVegaLite vc xs =
+--  GV.toVegaLite $ [(GV.configure . viewConfigAsHvega vc) []] <> xs
+configuredVegaLite vc xs =
+  GV.toVegaLite
+    $  viewConfigAsTopLevel vc
+    <> [(GV.configure . viewConfigAsHvega vc) []]
+    <> xs
 
 data TimeEncoding a = TimeEncoding { timeFormat :: Text, timeUnit :: GV.TimeUnit, toDateTime:: a -> [GV.DateTime] }
 

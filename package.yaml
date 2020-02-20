@@ -1,5 +1,5 @@
 name:                Frames-hvega
-version:             0.2.0.0
+version:             0.2.1.0
 github:              "adamConnerSax/Frames-hvega"
 license:             BSD3
 author:              "Adam Conner-Sax"
@@ -24,7 +24,7 @@ dependencies:
 - Frames-map-reduce >= 0.1 && < 0.4
 - Frames-utils >= 0.2.0.1 && < 0.4
 - histogram-fill >= 0.8.0.0 && < 0.10
-- hvega >= 0.4.0.0 && < 0.5
+- hvega >= 0.4.0.0 && < 0.6
 - map-reduce-folds >= 0.1.0.3 && < 0.2
 - statistics >= 0.15.0 && < 0.16
 - text >= 1.1.0.1 && < 1.3

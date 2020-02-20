@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 21205dae23e171f9feeac2a4311a1ceb97307cede440da4710cae5544eccbe0d
+-- hash: b30d531b0eacd2d392f22736a1ba4685d2e0e385b23cc5159bfc20ffc4816b04
 
 name:           Frames-hvega
-version:        0.2.0.0
+version:        0.2.1.0
 synopsis:       Tools for using hvega with data stored in a Frame or other Foldable container of vinyl records.
 description:    Please see the README on GitHub at <https://github.com/adamConnerSax/Frames-hvega#readme>
 category:       Graphics, Visualization
@@ -57,7 +57,7 @@ library
     , containers >=0.5.0.0 && <=0.7
     , foldl >=1.4.0 && <=1.5
     , histogram-fill >=0.8.0.0 && <0.10
-    , hvega >=0.4.0.0 && <0.5
+    , hvega >=0.4.0.0 && <0.6
     , map-reduce-folds >=0.1.0.3 && <0.2
     , statistics >=0.15.0 && <0.16
     , text >=1.1.0.1 && <1.3

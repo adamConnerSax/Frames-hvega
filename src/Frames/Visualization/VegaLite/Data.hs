@@ -35,6 +35,7 @@ module Frames.Visualization.VegaLite.Data
   , axisBounds
 
     -- * records -> hvega data
+  , addMappedColumn
   , recordToVLDataRow
   , recordsToVLData
   , pivotedRecordsToVLDataRows
@@ -74,6 +75,7 @@ import qualified Data.Vinyl.Functor            as V
 import qualified Data.Vinyl.TypeLevel          as V
 import qualified Frames                        as F
 import qualified Frames.Melt                   as F
+import qualified Frames.Transform              as FT
 import qualified Frames.MapReduce              as FMR
 import qualified Control.MapReduce             as MR
 
@@ -130,6 +132,15 @@ axisBounds Default = pure []
 axisBounds DataMinMax =
   fmap (maybe [] (uncurry axisBoundsPChannel)) (minMaxFieldF @t)
 axisBounds (GivenMinMax lo hi) = pure $ axisBoundsPChannel lo hi
+
+addMappedColumn :: forall t c rs f . (V.KnownField t
+                                     , V.KnownField c
+                                     , F.ElemOf rs t
+                                     , Functor f)
+                => (V.Snd t -> V.Snd c)
+                -> f (Row rs)
+                -> f (Row (rs V.++ '[c]))
+addMappedColumn g = fmap (FT.mutate $ \r -> FT.recordSingleton @c (g $ F.rgetField @t r))
 
 recordToVLDataRow'
   :: ( V.RMap rs

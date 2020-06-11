@@ -44,7 +44,7 @@ viewConfigAsTopLevel (ViewConfig w h p) =
   [ GV.width w
   , GV.height h
   , GV.padding (GV.PSize p)
-  , GV.autosize [GV.AFit, GV.APadding, GV.AResize]
+  , GV.autosize [GV.APad, GV.APadding, GV.AResize]
   ]
 
 configuredVegaLite :: ViewConfig -> [(GV.VLProperty, GV.VLSpec)] -> GV.VegaLite

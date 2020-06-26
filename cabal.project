@@ -2,7 +2,14 @@ packages: .
 jobs: 4
 with-compiler: ghc
 
+allow-newer: hashable
+               
 source-repository-package
   type: git
   location: https://github.com/adamConnerSax/Frames-utils
-  tag: 0ab28b668adb7836572c0b1ba6ec69ae423575fd
+  tag: ceef69e0eacec542ff515d40fb8f88a532634446
+
+source-repository-package
+  type: git
+  location: https://github.com/adamConnerSax/knit-haskell
+  tag: fb17b5d64f158423fc2605e516a658ec4447b22b

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6a326ccd855af82115cc6880e5c43b2278b157e9af7d1a8e80c434dc3cbd4ca9
+-- hash: f277197a931bd434c7428b47ee8474e1c5c051d3163e590638a5658bd284c844
 
 name:           Frames-hvega
 version:        0.2.1.0
@@ -49,15 +49,15 @@ library
       src
   ghc-options: -O -Wall
   build-depends:
-      Frames >=0.5.0 && <=0.7
+      Frames >=0.5.0 && <0.7
     , Frames-map-reduce >=0.1 && <0.5
     , Frames-utils >=0.2.0.1 && <0.4
     , array >=0.4.0.1 && <=0.6
     , base >=4.7 && <5
     , containers >=0.5.0.0 && <=0.7
-    , foldl >=1.4.0 && <=1.5
+    , foldl >=1.4.0 && <1.5
     , histogram-fill >=0.8.0.0 && <0.10
-    , hvega >=0.4.0.0 && <0.6
+    , hvega >=0.4.0.0 && <0.11
     , map-reduce-folds >=0.1.0.3 && <0.2
     , statistics >=0.15.0 && <0.16
     , text >=1.1.0.1 && <1.3

@@ -19,7 +19,7 @@ module Graphics.Vega.VegaLite.Configuration
 where
 
 import qualified Graphics.Vega.VegaLite        as GV
-
+import qualified Graphics.Vega.VegaLite.Compat as Compat
 import           Data.Text                      ( Text )
 
 data AxisBounds a where
@@ -56,7 +56,7 @@ configuredVegaLite vc xs =
     <> [(GV.configure . viewConfigAsHvega vc) []]
     <> xs
 
-data TimeEncoding a = TimeEncoding { timeFormat :: Text, timeUnit :: GV.TimeUnit, toDateTime:: a -> [GV.DateTime] }
+data TimeEncoding a = TimeEncoding { timeFormat :: Text, timeUnit :: Compat.BaseTimeUnitT, toDateTime:: a -> [GV.DateTime] }
 
 -- helpers for time encoding
 intYear :: TimeEncoding Int

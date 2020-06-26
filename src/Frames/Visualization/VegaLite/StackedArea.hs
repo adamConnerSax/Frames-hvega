@@ -64,7 +64,7 @@ stackedAreaVsTime title yBounds timeEnc vc vRows
         GV.position GV.X
           $ [ D.pName @t
             , GV.PmType GV.Temporal
-            , GV.PTimeUnit $ timeUnit timeEnc
+            , GV.PTimeUnit $ GV.Utc $ timeUnit timeEnc
             , GV.PAxis [GV.AxValues xAxValues]
             ]
       yEnc =

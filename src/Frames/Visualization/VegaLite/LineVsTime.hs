@@ -85,23 +85,23 @@ multiLineVsTime title yBounds timeEnc vc rows
         GV.X
         [ D.pName @t
         , GV.PmType GV.Temporal
-        , GV.PTimeUnit (timeUnit timeEnc)
+        , GV.PTimeUnit $ GV.Utc $ timeUnit timeEnc
         , GV.PAxis [GV.AxValues xAxValues]
         ]
-      orderEnc = GV.order [D.oName @t, GV.OmType GV.Temporal]
+--      orderEnc = GV.order [D.oName @t, GV.OmType GV.Temporal]
       colorEnc = GV.color [D.mName @g, GV.MmType GV.Nominal]
       enc      = xEnc . yEnc . colorEnc -- . orderEnc
-      filter name =
+      filterCols name =
         GV.transform . GV.filter (GV.FEqual (D.colName @g) (GV.Str name))
       lSpec name = GV.asSpec
         [ (GV.encoding . enc) []
         , GV.mark GV.Line [GV.MInterpolate GV.Monotone]
-        , filter name []
+        , filterCols name []
         ]
       mSpec gName = GV.asSpec
         [ (GV.encoding . enc) []
         , GV.mark GV.Point [GV.MFilled True]
-        , filter gName []
+        , filterCols gName []
         ]
       specs = concat $ fmap (\x -> [lSpec x, mSpec x]) groupNames
     in

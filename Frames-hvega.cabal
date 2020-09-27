@@ -49,11 +49,11 @@ library
       src
   ghc-options: -O -Wall
   build-depends:
-      Frames >=0.5.0 && <0.7
+      Frames >=0.5.0 && <0.8
     , Frames-map-reduce >=0.1 && <0.5
     , Frames-utils >=0.2.0.1 && <0.4
     , array >=0.4.0.1 && <=0.6
-    , base >=4.7 && <5
+    , base >=4.7 && <4.15
     , containers >=0.5.0.0 && <=0.7
     , foldl >=1.4.0 && <1.5
     , histogram-fill >=0.8.0.0 && <0.10

@@ -38,9 +38,17 @@ module Frames.Visualization.VegaLite.Data
   , addMappedColumn
   , recordToVLDataRow
   , recordsToVLData
+  , recordsToData
   , pivotedRecordsToVLDataRows
   , simplePivotFold
-
+  , recordToDataRow
+  , asVLData
+  , asVLNumber
+  , textAsVLStr
+  , asVLStrViaShow
+  , useColName
+  , fromToVLDataValue
+  
     -- * helpers 
   , colName
   , colNames
@@ -79,7 +87,7 @@ import qualified Frames.Transform              as FT
 import qualified Frames.MapReduce              as FMR
 import qualified Control.MapReduce             as MR
 
-import           GHC.TypeLits                   ( Symbol )
+import           GHC.TypeLits                   ( Symbol, symbolVal )
 import           Data.Kind                      ( Type )
 
 type Row = F.Record
@@ -163,6 +171,79 @@ recordToVLDataRow
   -> [GV.DataRow]
 recordToVLDataRow r = GV.dataRow (recordToVLDataRow' r) []
 
+-- using a record of functions
+type VLDataRecF = V.Lift (->) V.ElField (V.Const (T.Text, GV.DataValue))
+
+recordToDataRow
+  :: ( V.RApply rs
+     , V.RecordToList rs
+     )
+  => V.Rec VLDataRecF rs
+  -> Row rs
+  -> [GV.DataRow]
+recordToDataRow toDVRec r = GV.dataRow (V.recordToList $ V.rapply toDVRec r) []
+
+{-
+recordToDataRow'
+  :: forall rs.
+  ( V.RApply rs
+  , V.RecordToList rs
+  , F.ColumnHeaders rs
+  )
+  => V.Rec (V.Lift (->) V.ElField (V.Const GV.DataValue)) rs
+  -> Row rs
+  -> [GV.DataRow]
+recordToDataRow' toDVRec r =
+  let cNames = fmap T.pack $ F.columnHeaders (Proxy :: Proxy (F.Record rs))
+  in GV.dataRow (zip cNames $ V.recordToList $ V.rapply toDVRec r) []
+-}
+
+asVLData :: V.KnownField t
+         => (V.Snd t -> GV.DataValue)
+         -> GV.FieldName
+         -> VLDataRecF  t
+asVLData toVLData fieldName = V.Lift $ V.Const . (\x -> (fieldName, toVLData x)) . V.getField
+
+{-
+asVLData' :: forall t. V.KnownField t
+         => (V.Snd t -> GV.DataValue)
+         -> VLDataRecF t
+asVLData' toVLData = asVLData (T.pack $ symbolVal (Proxy :: Proxy (V.Fst t))) toVLData
+-}
+
+asVLNumber :: (V.KnownField t
+              , Real (V.Snd t)
+              )
+           => GV.FieldName
+           -> VLDataRecF  t
+asVLNumber = asVLData (GV.Number . realToFrac)
+
+textAsVLStr :: (V.KnownField t
+               , V.Snd t ~ T.Text
+               )
+           => GV.FieldName
+           -> VLDataRecF  t
+textAsVLStr = asVLData GV.Str 
+
+asVLStrViaShow :: (V.KnownField t
+                  , Show (V.Snd t)
+                  )
+           => GV.FieldName
+           -> VLDataRecF  t
+asVLStrViaShow = asVLData (GV.Str . T.pack . show)
+
+
+useColName
+  :: forall t. V.KnownField t
+  => (GV.FieldName -> VLDataRecF t)
+  -> VLDataRecF t
+useColName f =
+  let cName = T.pack $ symbolVal (Proxy :: Proxy (V.Fst t))
+  in f cName 
+
+fromToVLDataValue :: ToVLDataValue (F.ElField t) => VLDataRecF t
+fromToVLDataValue = V.Lift $ V.Const . toVLDataValue
+
 -- combine multi-row data
 pivotedRecordsToVLDataRows ::
   forall ks ps rs f. ( Ord (Row ks)
@@ -243,6 +324,21 @@ recordsToVLData transform rpr xs =
     $ List.concat
     $ fmap (recordToVLDataRow . transform)
     $ FL.fold FL.list xs
+
+recordsToData
+  :: ( V.RApply rs
+     , V.RecordToList rs
+     , Foldable f
+     )
+  => V.Rec (V.Lift (->) V.ElField (V.Const (T.Text, GV.DataValue))) rs
+  -> f (Row rs)
+  -> GV.Data
+recordsToData toDataRowRec xs =
+  GV.dataFromRows []
+    $ List.concat
+    $ fmap (recordToDataRow toDataRowRec)
+    $ FL.fold FL.list xs
+
 
 colName :: forall x . (F.ColumnHeaders '[x]) => Text
 colName = List.head $ colNames @'[x] --T.pack $ List.head $ F.columnHeaders (Proxy :: Proxy (F.Record '[x]))

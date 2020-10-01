@@ -2,14 +2,19 @@ packages: .
 jobs: 4
 with-compiler: ghc
 
-allow-newer: hashable
-               
+allow-newer: base, hashable, cereal-time:time, pandoc:random             
+                            
 source-repository-package
   type: git
   location: https://github.com/adamConnerSax/Frames-utils
-  tag: 41078fb42af5f74c9f573d28e9b241b39ecdc887
+  tag: 6735d38d026cae8a661c86633e5d9bb445bd58d7
 
 source-repository-package
   type: git
+  location: https://github.com/polysemy-research/polysemy-zoo
+  tag: fd7eb2b9934d15d233fb4e75acb7fbff80d149bf
+  
+source-repository-package
+  type: git
   location: https://github.com/adamConnerSax/knit-haskell
-  tag: fb17b5d64f158423fc2605e516a658ec4447b22b
+  tag: cc52f42dd518877ea060acbf428fd3c7aedb511c

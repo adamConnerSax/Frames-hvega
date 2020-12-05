@@ -7,7 +7,7 @@ cabal-version: 1.12
 -- hash: ceda8b47f0ca901833428a869c2185d845d6bad58c33605e28e62a7c9db6269c
 
 name:           Frames-hvega
-version:        0.2.1.0
+version:        0.3.0.0
 synopsis:       Tools for using hvega with data stored in a Frame or other Foldable container of vinyl records.
 description:    Please see the README on GitHub at <https://github.com/adamConnerSax/Frames-hvega#readme>
 category:       Graphics, Visualization

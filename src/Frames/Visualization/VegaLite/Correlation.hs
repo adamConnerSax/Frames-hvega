@@ -132,7 +132,7 @@ correlationCirclesFromFrame removeDiag title vc rows = do
 --                   . GV.tooltip [D.tName @q, GV.TmType GV.Nominal]
 --                   . GV.tooltip [D.tName @c, GV.TmType GV.Quantitative]
 
-      mark          = GV.mark GV.Circle []
+      mark          = GV.mark GV.Circle [GV.MTooltip GV.TTEncoding]
 --      configuration = GV.configure . viewConfigAsHvega vc
       vl            = configuredVegaLite vc $
         [ VegaCompat.title title

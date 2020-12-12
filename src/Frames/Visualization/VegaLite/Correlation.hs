@@ -17,6 +17,9 @@ module Frames.Visualization.VegaLite.Correlation
     correlationCircles
   , correlationCirclesFromFrame
   , toCorrelationRows
+  , computeCorrelation
+  , frameCorrelations
+  , LabeledCol(..)
   )
 where
 
@@ -39,19 +42,44 @@ import qualified Data.Vinyl.TypeLevel          as V
 import qualified Frames                        as F
 import qualified Graphics.Vega.VegaLite        as GV
 
-
+-- two pass
+computeCorrelation :: (RealFloat a, Foldable f) => (b -> a) -> (b -> a) -> f b -> a
+computeCorrelation get1 get2 rows =
+  let (m1, var1, m2, var2) = FL.fold ((,,,)
+                                       <$> FL.premap get1 FL.mean
+                                       <*> FL.premap get1 FL.variance
+                                       <*> FL.premap get2 FL.mean
+                                       <*> FL.premap get2 FL.variance
+                                     )
+                             rows
+      covF = (/) <$> (FL.Fold (\s row -> (s + (get1 row - m1) * (get2 row - m2))) 0 id) <*> fmap realToFrac FL.length                             
+     in (FL.fold covF rows) / sqrt (var1 * var2)
 
 -- | Correlation charts
-toCorrelationRows
-  :: (b -> T.Text)
-  -> S.Set b
-  -> (b -> b -> a)
-  -> [F.Record ['("L1", T.Text), '("L2", T.Text), '("C", a)]]
-toCorrelationRows toText parameters getCorr =
-  let allPairs = [ (x, y) | x <- S.toList parameters, y <- S.toList parameters ]
-      addCorr (x, y) = (x, y, getCorr x y)
-      makeRec (x, y, c) = toText x F.&: toText y F.&: c F.&: V.RNil
-  in  fmap (makeRec . addCorr) allPairs
+data LabeledCol rs a = LabeledCol { label :: T.Text,  getVal :: F.Record rs -> a }
+
+instance Eq (LabeledCol rs a) where
+  lc1 == lc2 = label lc1 == label lc2
+
+instance Ord (LabeledCol rs a) where
+  compare lc1 lc2 = compare (label lc1) (label lc2)
+
+frameCorrelations
+  :: forall a rs f. (D.ToVLDataValue (F.ElField '("C", a))
+                    , RealFloat a
+                    , Show a
+                    , Foldable f
+                    --               , Ord a
+                    )
+  => T.Text -> ViewConfig -> Bool -> S.Set (LabeledCol rs a) -> f (F.Record rs) -> Either T.Text GV.VegaLite
+frameCorrelations title vc removeDiag labeledCols rows =
+  let corrRows =
+        let allPairs = [ (x, y) | x <- S.toList labeledCols, y <- S.toList labeledCols ]
+            corr x y = computeCorrelation (getVal x) (getVal y) rows
+            makeRec :: (LabeledCol rs a, LabeledCol rs a) -> F.Record ['("L1", T.Text), '("L2", T.Text), '("C", a)]
+            makeRec (x, y) = label x F.&: label y F.&: corr x y F.&: V.RNil
+        in fmap makeRec allPairs
+  in correlationCirclesFromFrame  @'("L1", T.Text) @'("L2", T.Text) @'("C", a) removeDiag title vc corrRows
 
 correlationCircles
   :: forall a b 
@@ -70,6 +98,17 @@ correlationCircles
 correlationCircles toText parameters corr removeDiag title vc =
   let rows = toCorrelationRows toText parameters corr
   in correlationCirclesFromFrame @'("L1",T.Text) @'("L2",T.Text) @'("C", a) removeDiag title vc rows
+
+toCorrelationRows
+  :: (b -> T.Text)
+  -> S.Set b
+  -> (b -> b -> a)
+  -> [F.Record ['("L1", T.Text), '("L2", T.Text), '("C", a)]]
+toCorrelationRows toText parameters getCorr =
+  let allPairs = [ (x, y) | x <- S.toList parameters, y <- S.toList parameters ]
+      addCorr (x, y) = (x, y, getCorr x y)
+      makeRec (x, y, c) = toText x F.&: toText y F.&: c F.&: V.RNil
+  in  fmap (makeRec . addCorr) allPairs
 
 correlationCirclesFromFrame
   :: forall p q c rs f

@@ -1,1 +1,4 @@
-cradle: {cabal: {component: "lib:Frames-hvega"}}
+cradle:
+  cabal:
+    - path: "./src"
+      component: "lib:Frames-hvega"

@@ -6,6 +6,7 @@
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE StandaloneDeriving    #-}
 {-# LANGUAGE TypeApplications      #-}
@@ -18,6 +19,8 @@ module Frames.Visualization.VegaLite.Data
 
     -- * Types
   , Row
+  , VLCoRecHandlers
+  , EHandler (..)
 
     -- * Constraints
   , DataField
@@ -39,11 +42,13 @@ module Frames.Visualization.VegaLite.Data
   , recordToVLDataRow
   , recordsToVLData
   , recordsToData
+  , recordsToDataWithParse
   , pivotedRecordsToVLDataRows
   , simplePivotFold
   , recordToDataRow
   , asVLData
   , asVLNumber
+  , asVLCoRec
   , textAsVLStr
   , asVLStrViaShow
   , useColName
@@ -88,8 +93,9 @@ import qualified Frames.Transform              as FT
 import qualified Frames.MapReduce              as FMR
 import qualified Control.MapReduce             as MR
 
-import           GHC.TypeLits                   ( Symbol, symbolVal )
+import           GHC.TypeLits                   ( Symbol, KnownSymbol, symbolVal )
 import           Data.Kind                      ( Type )
+import Unsafe.Coerce (unsafeCoerce)
 
 type Row = F.Record
 
@@ -242,14 +248,37 @@ useColName f =
   let cName = T.pack $ symbolVal (Proxy :: Proxy (V.Fst t))
   in f cName
 
-type VLCoRecHandlers vs = V.Handlers vs (Text, GV.DataValue)
+type VLCoRecHandlers vs = EHandlers vs (Text, GV.DataValue)
 
+-- YIKES
+identityCoRec ::  forall ts.V.CoRec V.ElField ts -> V.CoRec V.Identity (F.UnColumn ts)
+identityCoRec = unsafeCoerce --(V.CoRec @V.Identity @(F.UnColumn ts) . V.Identity . V.getField)
+
+newtype EHandler b a = EH (V.ElField a -> b)
+type EHandlers ts b = V.Rec (EHandler b) ts
+
+class HandlersToEHandlers (ts :: [(Symbol, Type)]) where
+  handlersToEHandlers :: V.Handlers (F.UnColumn ts) b -> EHandlers ts b
+
+instance HandlersToEHandlers '[] where
+  handlersToEHandlers _ = V.RNil
+
+instance (HandlersToEHandlers ts, t ~ (s, a)) => HandlersToEHandlers (t ': ts) where
+  handlersToEHandlers (x V.:& xs) = undefined
+--    case t of
+--      V.H f -> EH (f . V.getField) V.:& handlersToEHandlers ts
+
+matchE :: forall ts b. EHandlers ts b -> V.CoRec V.ElField ts -> b
+matchE hs (V.CoRec x) = aux x
+  where aux :: forall a. V.RElem a ts (V.RIndex a ts) => V.ElField a -> b
+        aux x = case V.rget @a hs of
+                  EH f -> f x
 
 asVLCoRec :: (V.KnownField t
              , V.Snd t ~ V.CoRec V.ElField vs
-             , F.StripFieldNames vs
-             ) => VLCoRecHandlers (F.UnColumn vs) -> VLDataRecF t
-asVLCoRec h = V.Lift $ V.Const . (\x -> V.match (F.stripNames x) h)
+             ) => VLCoRecHandlers vs -> VLDataRecF t
+asVLCoRec h = V.Lift $ V.Const . (\x -> matchE h $ V.getField x)
+
 
 fromToVLDataValue :: ToVLDataValue (F.ElField t) => VLDataRecF t
 fromToVLDataValue = V.Lift $ V.Const . toVLDataValue
@@ -343,8 +372,19 @@ recordsToData
   => V.Rec (V.Lift (->) V.ElField (V.Const (T.Text, GV.DataValue))) rs
   -> f (Row rs)
   -> GV.Data
-recordsToData toDataRowRec xs =
-  GV.dataFromRows []
+recordsToData = recordsToDataWithParse []
+
+recordsToDataWithParse
+  :: ( V.RApply rs
+     , V.RecordToList rs
+     , Foldable f
+     )
+  => [(T.Text, GV.DataType)]
+  -> V.Rec (V.Lift (->) V.ElField (V.Const (T.Text, GV.DataValue))) rs
+  -> f (Row rs)
+  -> GV.Data
+recordsToDataWithParse parseList toDataRowRec xs =
+  GV.dataFromRows [GV.Parse $ parseList]
     $ List.concat
     $ fmap (recordToDataRow toDataRowRec)
     $ FL.fold FL.list xs

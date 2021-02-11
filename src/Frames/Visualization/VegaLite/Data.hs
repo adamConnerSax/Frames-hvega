@@ -48,8 +48,8 @@ module Frames.Visualization.VegaLite.Data
   , asVLStrViaShow
   , useColName
   , fromToVLDataValue
-  
-    -- * helpers 
+
+    -- * helpers
   , colName
   , colNames
   , pName
@@ -81,6 +81,7 @@ import qualified Graphics.Vega.VegaLite        as GV
 import qualified Data.Vinyl                    as V
 import qualified Data.Vinyl.Functor            as V
 import qualified Data.Vinyl.TypeLevel          as V
+import qualified Data.Vinyl.CoRec              as V
 import qualified Frames                        as F
 import qualified Frames.Melt                   as F
 import qualified Frames.Transform              as FT
@@ -111,7 +112,7 @@ vinylRows dataLoaders dat =
 
 addRowBuilder
   :: forall t ts a
-   .  V.KnownField t --DataField t 
+   .  V.KnownField t --DataField t
   => (a -> V.Snd t)
   -> RowBuilderF a ts
   -> RowBuilderF a (t ': ts)
@@ -223,7 +224,7 @@ textAsVLStr :: (V.KnownField t
                )
            => GV.FieldName
            -> VLDataRecF  t
-textAsVLStr = asVLData GV.Str 
+textAsVLStr = asVLData GV.Str
 
 asVLStrViaShow :: (V.KnownField t
                   , Show (V.Snd t)
@@ -239,7 +240,16 @@ useColName
   -> VLDataRecF t
 useColName f =
   let cName = T.pack $ symbolVal (Proxy :: Proxy (V.Fst t))
-  in f cName 
+  in f cName
+
+type VLCoRecHandlers vs = V.Handlers vs (Text, GV.DataValue)
+
+
+asVLCoRec :: (V.KnownField t
+             , V.Snd t ~ V.CoRec V.ElField vs
+             , F.StripFieldNames vs
+             ) => VLCoRecHandlers (F.UnColumn vs) -> VLDataRecF t
+asVLCoRec h = V.Lift $ V.Const . (\x -> V.match (F.stripNames x) h)
 
 fromToVLDataValue :: ToVLDataValue (F.ElField t) => VLDataRecF t
 fromToVLDataValue = V.Lift $ V.Const . toVLDataValue
@@ -252,8 +262,8 @@ pivotedRecordsToVLDataRows ::
                      , V.RecordToList ks
                      , ps F.⊆ rs -- ^ pivot/data columns
                      , ks F.⊆ rs -- ^ key columns
-                     , ps F.⊆ rs 
-                     , Foldable f                 
+                     , ps F.⊆ rs
+                     , Foldable f
                     )
   =>  FL.Fold (Row ps) [(T.Text, GV.DataValue)]
   -> f (Row rs)
@@ -264,7 +274,7 @@ pivotedRecordsToVLDataRows pivotFold rows =
         (FMR.assignKeysAndData @ks @ps)
         (MR.ReduceFold $ (\k -> fmap (\pVLDat -> recordToVLDataRow' k ++ pVLDat) pivotFold))
   in concat $ fmap (\x -> GV.dataRow x []) (FL.fold rowsFold rows)
-  
+
 -- pivot key becomes text, data cols become labeled values, each merged with key per given function
 simplePivotFold ::
   forall ps ds. (ps F.⊆ (ps V.++ ds)
@@ -483,5 +493,3 @@ instance ToVLDateTime DT.TimeOfDay where
 instance ToVLDateTime DT.LocalTime where
   toVLDateTime (DT.LocalTime day timeOfDay) =
     vegaLiteDate day ++ vegaLiteTime timeOfDay
-
-

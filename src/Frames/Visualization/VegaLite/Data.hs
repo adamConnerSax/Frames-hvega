@@ -20,6 +20,7 @@ module Frames.Visualization.VegaLite.Data
     -- * Types
   , Row
   , VLCoRecHandlers
+  , VLCoRecHandlers'
   , EHandler (..)
 
     -- * Constraints
@@ -36,6 +37,7 @@ module Frames.Visualization.VegaLite.Data
     -- * utilities
   , minMaxFieldF
   , axisBounds
+  , HandlersToEHandlers
 
     -- * records -> hvega data
   , addMappedColumn
@@ -49,6 +51,7 @@ module Frames.Visualization.VegaLite.Data
   , asVLData
   , asVLNumber
   , asVLCoRec
+  , asVLCoRec'
   , textAsVLStr
   , asVLStrViaShow
   , useColName
@@ -249,10 +252,7 @@ useColName f =
   in f cName
 
 type VLCoRecHandlers vs = EHandlers vs (Text, GV.DataValue)
-
--- YIKES
-identityCoRec ::  forall ts.V.CoRec V.ElField ts -> V.CoRec V.Identity (F.UnColumn ts)
-identityCoRec = unsafeCoerce --(V.CoRec @V.Identity @(F.UnColumn ts) . V.Identity . V.getField)
+type VLCoRecHandlers' vs = V.Handlers vs (Text, GV.DataValue)
 
 newtype EHandler b a = EH (V.ElField a -> b)
 type EHandlers ts b = V.Rec (EHandler b) ts
@@ -263,21 +263,28 @@ class HandlersToEHandlers (ts :: [(Symbol, Type)]) where
 instance HandlersToEHandlers '[] where
   handlersToEHandlers _ = V.RNil
 
-instance (HandlersToEHandlers ts, t ~ (s, a)) => HandlersToEHandlers (t ': ts) where
-  handlersToEHandlers (x V.:& xs) = undefined
---    case t of
---      V.H f -> EH (f . V.getField) V.:& handlersToEHandlers ts
+instance (HandlersToEHandlers ts, t ~ '(s, a)) => HandlersToEHandlers (t ': ts) where
+  handlersToEHandlers (x V.:& xs) =
+    case x of
+      V.H f -> EH (f . V.getField) V.:& handlersToEHandlers xs
 
 matchE :: forall ts b. EHandlers ts b -> V.CoRec V.ElField ts -> b
 matchE hs (V.CoRec x) = aux x
   where aux :: forall a. V.RElem a ts (V.RIndex a ts) => V.ElField a -> b
-        aux x = case V.rget @a hs of
-                  EH f -> f x
+        aux a = case V.rget @a hs of
+                  EH f -> f a
 
 asVLCoRec :: (V.KnownField t
              , V.Snd t ~ V.CoRec V.ElField vs
              ) => VLCoRecHandlers vs -> VLDataRecF t
 asVLCoRec h = V.Lift $ V.Const . (\x -> matchE h $ V.getField x)
+
+
+asVLCoRec' :: (V.KnownField t
+             , V.Snd t ~ V.CoRec V.ElField vs
+             , HandlersToEHandlers vs
+             ) => VLCoRecHandlers' (F.UnColumn vs) -> VLDataRecF t
+asVLCoRec' h = let h' = handlersToEHandlers h in asVLCoRec h'
 
 
 fromToVLDataValue :: ToVLDataValue (F.ElField t) => VLDataRecF t

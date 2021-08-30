@@ -49,6 +49,7 @@ module Frames.Visualization.VegaLite.Data
   , simplePivotFold
   , recordToDataRow
   , asVLData
+  , asVLData'
   , asVLNumber
   , asVLCoRec
   , asVLCoRec'
@@ -182,7 +183,7 @@ recordToVLDataRow
 recordToVLDataRow r = GV.dataRow (recordToVLDataRow' r) []
 
 -- using a record of functions
-type VLDataRecF = V.Lift (->) V.ElField (V.Const (T.Text, GV.DataValue))
+type VLDataRecF = V.Lift (->) V.ElField (V.Const [(T.Text, GV.DataValue)])
 
 recordToDataRow
   :: ( V.RApply rs
@@ -191,7 +192,7 @@ recordToDataRow
   => V.Rec VLDataRecF rs
   -> Row rs
   -> [GV.DataRow]
-recordToDataRow toDVRec r = GV.dataRow (V.recordToList $ V.rapply toDVRec r) []
+recordToDataRow toDVRec r = GV.dataRow (concat $ V.recordToList $ V.rapply toDVRec r) []
 
 {-
 recordToDataRow'
@@ -212,7 +213,14 @@ asVLData :: V.KnownField t
          => (V.Snd t -> GV.DataValue)
          -> GV.FieldName
          -> VLDataRecF  t
-asVLData toVLData fieldName = V.Lift $ V.Const . (\x -> (fieldName, toVLData x)) . V.getField
+asVLData toVLData fieldName = asVLData' [(fieldName, toVLData)] --V.Lift $ V.Const . (\x -> [(fieldName, toVLData x)]) . V.getField
+
+
+asVLData' ::  V.KnownField t
+          => [(GV.FieldName, V.Snd t -> GV.DataValue)]
+          -> VLDataRecF t
+asVLData' toVLData = V.Lift $ V.Const . (\x -> fmap (q x) toVLData)  where
+  q x (name, f) = (name, f $ V.getField x)
 
 {-
 asVLData' :: forall t. V.KnownField t
@@ -277,7 +285,7 @@ matchE hs (V.CoRec x) = aux x
 asVLCoRec :: (V.KnownField t
              , V.Snd t ~ V.CoRec V.ElField vs
              ) => VLCoRecHandlers vs -> VLDataRecF t
-asVLCoRec h = V.Lift $ V.Const . (\x -> matchE h $ V.getField x)
+asVLCoRec h = V.Lift $ V.Const . (\x -> pure . matchE h $ V.getField x)
 
 
 asVLCoRec' :: (V.KnownField t
@@ -288,7 +296,7 @@ asVLCoRec' h = let h' = handlersToEHandlers h in asVLCoRec h'
 
 
 fromToVLDataValue :: ToVLDataValue (F.ElField t) => VLDataRecF t
-fromToVLDataValue = V.Lift $ V.Const . toVLDataValue
+fromToVLDataValue = V.Lift $ V.Const . pure . toVLDataValue
 
 -- combine multi-row data
 pivotedRecordsToVLDataRows ::
@@ -376,7 +384,7 @@ recordsToData
      , V.RecordToList rs
      , Foldable f
      )
-  => V.Rec (V.Lift (->) V.ElField (V.Const (T.Text, GV.DataValue))) rs
+  => V.Rec (V.Lift (->) V.ElField (V.Const [(T.Text, GV.DataValue)])) rs
   -> f (Row rs)
   -> GV.Data
 recordsToData = recordsToDataWithParse []
@@ -387,7 +395,7 @@ recordsToDataWithParse
      , Foldable f
      )
   => [(T.Text, GV.DataType)]
-  -> V.Rec (V.Lift (->) V.ElField (V.Const (T.Text, GV.DataValue))) rs
+  -> V.Rec (V.Lift (->) V.ElField (V.Const [(T.Text, GV.DataValue)])) rs
   -> f (Row rs)
   -> GV.Data
 recordsToDataWithParse parseList toDataRowRec xs =

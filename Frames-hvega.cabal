@@ -54,7 +54,7 @@ library
     , containers >=0.5.0.0 && <=0.7
     , foldl >=1.4.0 && <1.5
     , histogram-fill >=0.8.0.0 && <0.10
-    , hvega >=0.6.0.0 && <0.12
+    , hvega >=0.6.0.0 && <0.13
     , hvega-utils
     , map-reduce-folds >=0.1.0.3 && <0.2
     , relude >=1.0.0 && < 1.2

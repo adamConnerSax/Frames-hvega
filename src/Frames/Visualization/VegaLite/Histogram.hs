@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -127,7 +128,11 @@ multiHistogram ::
   f (D.Row rs) ->
   GV.VegaLite
 multiHistogram title yLabelM  =
+#if MIN_VERSION_vinyl(0,14,0)
+  VL.multiHistogram title (Just $ D.colName @x) yLabelM (Just $ D.colName @c) (F.rgetField @x) (F.rgetField @c) (snd . D.toVLDataValue . V.Field @c)
+#else
   VL.multiHistogram title (Just $ D.colName @x) yLabelM (Just $ D.colName @c) (F.rgetField @x) (F.rgetField @c) (snd . D.toVLDataValue . V.Field @(V.Fst c))
+#endif
 {-
   let yLabel = fromMaybe "count" yLabelM
       xLabel = D.colName @x

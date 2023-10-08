@@ -1,21 +1,14 @@
-packages: . ~/DataScience/hvega-utils
+packages: . ~/DataScience/hvega-utils ~/DataScience/Frames-utils ~/DataScience/knit-haskell ~/DataScience/map-reduce-folds ~/DataScience/Frames-streamly ~/DataScience/hvega-utils
 jobs: 4
 with-compiler: ghc
 
-allow-newer: base, hashable, cereal-time:time, pandoc:random
+allow-newer: base, hashable, cereal-time:time, pandoc:random, Frames:ghc-prim, streamly-bytestring:bytestring, foldl-statistics:profunctors, primitive, template-haskell
 
 --source-repository-package
 --  type: git
 --  location: https://github.com/adamConnerSax/hvega-utils
 --  tag:
-
-
 source-repository-package
   type: git
-  location: https://github.com/adamConnerSax/Frames-utils
-  tag:  83f3ab886eacb1fb0d874702cab6ea3ab1965136
-
-source-repository-package
-  type: git
-  location: https://github.com/adamConnerSax/knit-haskell
-  tag: e8180b9b82134b594c75d64e916bc28f28181b44
+  location: https://github.com/adamConnerSax/heidi
+  tag: 83e0f7e6ba80baaa18ab7daafe7083828fc74d60
